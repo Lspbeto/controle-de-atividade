@@ -1,99 +1,258 @@
-:root {
-  --bg: #f3f5f4;
-  --card: #fff;
-  --ink: #16211d;
-  --muted: #5f6d67;
-  --line: #d5ddd9;
-  --accent: #0f6b54;
-  --accent-ink: #fff;
-  --danger: #b3261e;
+/* ===== VARIÁVEIS DE COR ===== */
+:root { /* :root = a página inteira; variáveis ficam disponíveis em todo o CSS */
+  --bg: #f3f5f8;       /* fundo da página */
+  --surface: #fff;     /* fundo de cartões e formulário */
+  --ink: #1b2333;      /* cor do texto */
+  --muted: #64708a;    /* texto secundário */
+  --line: #dde2ec;     /* cor das bordas */
+  --accent: #2f5bea;   /* cor do botão principal */
+  --accent-ink: #fff;  /* texto sobre o botão */
+  --todo: #8a94a8;     /* cor da coluna "A fazer" */
+  --doing: #d98a00;    /* cor da coluna "Em andamento" */
+  --done: #1f8f6a;     /* cor da coluna "Concluídas" */
+  --late: #d23b4b;     /* cor de atividade atrasada e do botão Excluir */
+  color-scheme: light; /* diz ao navegador que o tema é claro */
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #121816;
-    --card: #1b2420;
-    --ink: #e8efec;
-    --muted: #9aa9a2;
-    --line: #2f3b36;
-    --accent: #4fc3a1;
-    --accent-ink: #06231a;
-    --danger: #ff8a80;
+@media (prefers-color-scheme: dark) { /* só vale se o aparelho estiver em modo escuro */
+  :root { /* redefine as variáveis com cores escuras */
+    --bg: #12161f; --surface: #1b2130; --ink: #e8ecf5; --muted: #93a0ba; --line: #2b3347;
+    --accent: #6f8dff; --accent-ink: #0d1220;
+    --todo: #8591aa; --doing: #f0aa2e; --done: #3cc299; --late: #ff6b79;
+    color-scheme: dark;
   }
 }
 
-* { box-sizing: border-box; }
+/* ===== BASE ===== */
+* { box-sizing: border-box; } /* padding e borda entram na largura total do elemento */
 
 body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--ink);
-  font: 16px/1.5 "Segoe UI", system-ui, sans-serif;
+  margin: 0;                    /* remove a margem padrão do navegador */
+  background: var(--bg);        /* usa a variável de fundo */
+  color: var(--ink);            /* cor do texto */
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif; /* fonte do sistema, com alternativas */
+  line-height: 1.45;            /* altura da linha: deixa o texto respirar */
 }
 
-main { max-width: 860px; margin: 0 auto; padding: 20px 16px 48px; }
+.wrap {
+  max-width: 1080px;            /* largura máxima do conteúdo */
+  margin: 0 auto;               /* "auto" nas laterais centraliza */
+  padding: 24px 16px 48px;      /* espaço interno: topo, laterais, base */
+}
 
-h1 { font-size: 1.5rem; margin: 0 0 4px; }
-h2 { font-size: 1.1rem; margin: 0 0 12px; }
-p.sub { color: var(--muted); margin: 0 0 20px; }
+/* ===== CABEÇALHO ===== */
+header {
+  display: flex;                /* organiza os filhos em linha */
+  flex-wrap: wrap;              /* permite quebrar linha em telas pequenas */
+  align-items: flex-end;        /* alinha os itens pela base */
+  justify-content: space-between; /* um item em cada ponta */
+  gap: 16px;                    /* espaço entre os itens */
+  margin-bottom: 20px;          /* espaço abaixo do cabeçalho */
+}
+h1 {
+  margin: 0;
+  font-size: clamp(1.8rem, 4vw, 2.6rem); /* clamp(mínimo, ideal, máximo): fonte que cresce com a tela */
+  font-weight: 800;             /* negrito forte */
+  letter-spacing: -.02em;       /* aproxima levemente as letras */
+}
+.sub { color: var(--muted); margin: 2px 0 0; } /* texto de apoio em cinza */
 
-.card {
-  background: var(--card);
+/* ===== PROGRESSO ===== */
+.progress { min-width: 220px; flex: 1; max-width: 340px; } /* flex:1 ocupa o espaço livre, até 340px */
+.progress b { font-size: 1.6rem; font-weight: 800; }       /* porcentagem grande */
+.bar {
+  height: 10px;
+  border-radius: 99px;          /* cantos totalmente arredondados */
+  background: var(--line);      /* trilho vazio */
+  overflow: hidden;             /* corta o que passar das bordas arredondadas */
+  margin-top: 6px;
+  display: flex;                /* os trechos ficam lado a lado */
+}
+.bar i { display: block; height: 100%; transition: width .3s; } /* transition: largura muda suavemente */
+.bar .d { background: var(--done); }   /* trecho verde */
+.bar .g { background: var(--doing); }  /* trecho amarelo */
+
+/* ===== FORMULÁRIO ===== */
+.form {
+  display: grid;                              /* layout em grade */
+  grid-template-columns: 2fr 1fr 1fr auto;   /* título maior, categoria e prazo médios, botão do tamanho do texto */
+  gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+input, select, button { font: inherit; color: inherit; } /* herda fonte e cor da página */
+input, select {
+  background: var(--bg);
   border: 1px solid var(--line);
   border-radius: 10px;
-  padding: 18px;
-  margin-bottom: 16px;
+  padding: 10px 12px;
+  min-width: 0;                 /* evita que o campo estoure a grade */
 }
-.auth { max-width: 380px; margin: 8vh auto 0; }
-
-label { display: block; font-size: .9rem; margin: 10px 0 4px; }
-
-input {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: var(--bg);
-  color: var(--ink);
-  font: inherit;
+input:focus-visible, select:focus-visible, button:focus-visible {
+  outline: 2px solid var(--accent);  /* contorno ao navegar pelo teclado */
+  outline-offset: 2px;
 }
-input:focus-visible,
-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-
-button {
-  font: inherit;
-  cursor: pointer;
-  border-radius: 6px;
-  padding: 10px 14px;
-  border: 1px solid var(--accent);
+.primary {
   background: var(--accent);
   color: var(--accent-ink);
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-weight: 600;
+  cursor: pointer;              /* mãozinha ao passar o mouse */
 }
-button.sec { background: transparent; color: var(--ink); border-color: var(--line); }
-button.del { background: transparent; color: var(--danger); border-color: var(--line); padding: 6px 10px; }
-button:disabled { opacity: .4; cursor: not-allowed; }
-.link { background: none; border: none; color: var(--accent); padding: 0; text-decoration: underline; }
 
-.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
-.row > div { flex: 1 1 140px; }
+/* ===== FILTROS ===== */
+.tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 16px; }
+.chip {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 99px;          /* formato de pílula */
+  padding: 6px 14px;
+  cursor: pointer;
+}
+.chip[aria-pressed="true"] {    /* seletor de atributo: só o filtro ativo */
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+}
+.spacer { flex: 1; }            /* empurra "Limpar concluídas" para a direita */
+.link {
+  background: none; border: 0;
+  color: var(--muted);
+  cursor: pointer;
+  text-decoration: underline;   /* sublinhado, aparência de link */
+  padding: 6px;
+}
 
-.top {
+/* ===== QUADRO E COLUNAS ===== */
+.board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* 3 colunas de larguras iguais */
+  gap: 14px;
+  align-items: start;           /* colunas com a altura do próprio conteúdo */
+}
+.col {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-top: 4px solid var(--c); /* faixa colorida no topo; --c é definida pelo JavaScript */
+  border-radius: 14px;
+  padding: 12px;
+  min-height: 120px;
+}
+.col h2 {
+  margin: 0 0 10px;
+  font-size: 1rem;
+  font-weight: 600;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 16px;
+  justify-content: space-between; /* nome à esquerda, contagem à direita */
+}
+.col h2 span { color: var(--muted); font-weight: 400; }
+
+/* ===== CARTÕES ===== */
+.card {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  background: var(--bg);
+}
+.card p { margin: 0 0 6px; font-weight: 600; overflow-wrap: anywhere; } /* quebra palavras muito longas */
+.done p { text-decoration: line-through; color: var(--muted); }          /* concluída: riscada e apagada */
+.meta { display: flex; flex-wrap: wrap; gap: 6px; font-size: .82rem; color: var(--muted); margin-bottom: 8px; }
+.tag { border: 1px solid var(--line); border-radius: 6px; padding: 0 6px; } /* etiqueta de categoria/prazo */
+.late { color: var(--late); border-color: var(--late); }                 /* prazo vencido em vermelho */
+.acts { display: flex; gap: 6px; }
+.acts button {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 8px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: .85rem;
+}
+.acts .del { margin-left: auto; color: var(--late); } /* auto empurra "Excluir" para a direita */
+.empty { color: var(--muted); font-size: .9rem; padding: 8px 2px; } /* mensagem de coluna vazia */
+
+/* ===== CELULAR ===== */
+@media (max-width: 820px) {     /* aplica só em telas de até 820px */
+  .board { grid-template-columns: 1fr; }            /* colunas empilhadas */
+  .form { grid-template-columns: 1fr 1fr; }          /* formulário em 2 colunas */
+  .form input:first-child { grid-column: 1 / -1; }   /* título ocupa a largura toda */
+  .primary { grid-column: 1 / -1; }                 /* botão ocupa a largura toda */
 }
 
-.msg { min-height: 1.4em; margin: 10px 0 0; font-size: .9rem; color: var(--danger); }
-.msg.ok { color: var(--accent); }
+/* ===== USUÁRIOS (novo) ===== */
+.users { margin-bottom: 16px; }                    /* espaço abaixo da área de usuários */
+.users h2 { margin: 0 0 8px; font-size: 1rem; }    /* título da seção */
+#fu { grid-template-columns: 1fr auto auto; }      /* formulário de usuário: campo, botão e cancelar */
+#f { grid-template-columns: 2fr 1fr 1fr 1fr auto; } /* formulário de atividade com a coluna extra "Responsável" */
+.ulist { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; } /* lista sem marcadores, em linha */
+.ulist li {
+  display: flex; align-items: center; gap: 8px;    /* nome e botões lado a lado */
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 10px; padding: 6px 10px;
+}
+.ulist .n { color: var(--muted); font-size: .82rem; } /* quantidade de atividades do usuário */
+.ulist button {
+  border: 1px solid var(--line); background: var(--bg);
+  border-radius: 8px; padding: 2px 8px; cursor: pointer; font-size: .82rem;
+}
+.ulist .del { color: var(--late); }                /* "Excluir" em vermelho */
+.acts { flex-wrap: wrap; }                         /* botões do cartão quebram linha se faltar espaço */
+@media (max-width: 820px) {
+  #f { grid-template-columns: 1fr 1fr; }           /* no celular: 2 colunas */
+  #fu { grid-template-columns: 1fr; }              /* no celular: 1 coluna */
+}
 
-.scroll { overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; min-width: 420px; }
-th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--line); }
-th { font-size: .85rem; color: var(--muted); font-weight: 600; }
-td.n, th.n { text-align: right; }
+/* ===== LOGIN (novo) ===== */
+[hidden] { display: none !important; }            /* garante que o atributo hidden sempre esconda o elemento */
+.login { min-height: 100vh; display: grid; place-items: center; padding: 16px; } /* centraliza o cartão na tela */
+.loginbox {
+  width: 100%; max-width: 360px;                  /* cartão estreito */
+  display: flex; flex-direction: column; gap: 12px; /* campos empilhados */
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 14px; padding: 24px;
+}
+.loginbox h1 { font-size: 1.6rem; }
+.loginbox label { display: grid; gap: 4px; font-size: .9rem; color: var(--muted); } /* rótulo acima do campo */
+#loginMsg { color: var(--late); min-height: 1.4em; margin: 0; } /* mensagens de erro em vermelho */
+.topo { display: flex; justify-content: flex-end; align-items: center; gap: 8px; color: var(--muted); margin-bottom: 8px; } /* "Conta: x  Sair" à direita */
 
-.hidden { display: none; }
-.vazio { color: var(--muted); padding: 8px 0; }
+/* ===== RELATÓRIO (novo) ===== */
+#fr { grid-template-columns: 1fr 1fr 1fr auto; align-items: end; } /* período, base e botão em uma linha */
+#fr label { display: grid; gap: 4px; font-size: .9rem; color: var(--muted); }
+#relatorio { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px; margin-top: 16px; }
+#relatorio .acoes { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
+#relatorio h2 { margin: 0 0 4px; font-size: 1.4rem; }
+.rinfo { margin: 0; color: var(--muted); }
+.resumo { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; margin: 14px 0; } /* caixas de totais */
+.rbox { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; display: grid; }
+.rbox b { font-size: 1.3rem; }
+.rbox span { color: var(--muted); font-size: .82rem; }
+#relatorio table { width: 100%; border-collapse: collapse; font-size: .9rem; } /* bordas da tabela coladas */
+#relatorio th, #relatorio td { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: left; }
+#relatorio tr { break-inside: avoid; }                  /* não corta uma linha entre duas páginas */
+@media (max-width: 820px) { #fr { grid-template-columns: 1fr 1fr; } #relatorio { overflow-x: auto; } }
+
+/* ===== IMPRESSÃO ===== */
+@media print {
+  :root { --bg: #fff; --surface: #fff; --ink: #000; --muted: #444; --line: #bbb; color-scheme: light; } /* força cores claras no papel */
+  #app > :not(#relatorio) { display: none !important; } /* esconde tudo, menos o relatório */
+  #relatorio .acoes { display: none !important; }       /* esconde os botões */
+  #relatorio { border: 0; padding: 0; margin: 0; }
+  body { background: #fff; }
+}
+
+/* ===== RELATÓRIO: TIPOS (novo) ===== */
+#fr { grid-template-columns: repeat(4, 1fr) auto; }   /* agora são 4 campos (tipo, de, até, datas por) e o botão */
+@media (max-width: 820px) { #fr { grid-template-columns: 1fr 1fr; } } /* celular: 2 colunas */
+#relatorio h3 { margin: 18px 0 6px; font-size: 1.05rem; break-after: avoid; } /* subtítulos; não ficam sozinhos no fim da página */
+
+/* ===== RELATÓRIO: SITUAÇÃO E IMPRIMIR DIRETO (novo) ===== */
+#fr { grid-template-columns: repeat(5, 1fr); }        /* 5 campos: tipo, de, até, datas por, situação */
+.rbtns { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; } /* botões numa linha própria */
+@media (max-width: 820px) { #fr { grid-template-columns: 1fr 1fr; } }    /* celular: 2 colunas */
