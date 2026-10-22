@@ -22,12 +22,33 @@ function ler(chave) {                                    // lê uma lista salva 
 }
 // Os dados só são carregados depois do login: cada conta tem os seus próprios dados
 let conta = null;       // nome da conta que está logada (null = ninguém)
+let perfil = null;      // perfil da conta logada: 'admin' ou 'operador'
+const ehAdmin = () => perfil === 'admin';                // true se for administrador
+
+function lerContas() {                                   // lê as contas e garante que todas tenham perfil
+  const c = ler('contas');
+  c.forEach((x, i) => { if (!x.perfil) x.perfil = i === 0 ? 'admin' : 'operador'; }); // contas antigas: a 1ª vira administrador
+  return c;
+}
+function migrar(usuario) {                               // leva dados antigos (por conta) para a área compartilhada
+  try {
+    if (localStorage.getItem('atividades:geral') !== null) return; // já migrado
+    ['atividades', 'usuarios'].forEach(k => {
+      const v = localStorage.getItem(k + ':' + usuario) || localStorage.getItem(k);
+      if (v) localStorage.setItem(k + ':geral', v);
+    });
+  } catch (e) {}
+}
+function atualizarTopo() {                               // mostra conta/perfil e esconde o que o operador não pode ver
+  document.body.classList.toggle('op', !ehAdmin());      // classe "op" esconde os itens .adm pelo CSS
+  $('quem').textContent = 'Conta: ' + conta + ' (' + (ehAdmin() ? 'Administrador' : 'Operador') + ')';
+}
 
 function salvar() {                                      // grava as duas listas no navegador
   try {
     if (!conta) return;                                  // sem login, não salva nada
-    localStorage.setItem('atividades:' + conta, JSON.stringify(tarefas)); // chave própria de cada conta
-    localStorage.setItem('usuarios:' + conta, JSON.stringify(usuarios));
+    localStorage.setItem('atividades:geral', JSON.stringify(tarefas)); // dados compartilhados por todas as contas
+    localStorage.setItem('usuarios:geral', JSON.stringify(usuarios));
   } catch (e) {}
 }
 
@@ -58,6 +79,7 @@ function resetUsuario() {                                // volta o formulário 
   $('cancelaUsuario').hidden = true;
 }
 function editarUsuario(id) {                             // coloca o usuário no formulário para editar
+  if (!ehAdmin()) return;                                // só o administrador pode
   editUser = id;
   $('nomeUsuario').value = nomeUsuario(id);              // preenche o campo com o nome atual
   $('btnUsuario').textContent = 'Salvar usuário';
@@ -65,6 +87,7 @@ function editarUsuario(id) {                             // coloca o usuário no
   $('nomeUsuario').focus();
 }
 function apagarUsuario(id) {                             // exclui o usuário
+  if (!ehAdmin()) return;                                // só o administrador pode
   if (!confirm('Excluir o usuário "' + nomeUsuario(id) + '"? Suas atividades ficarão sem responsável.')) return;
   usuarios = usuarios.filter(u => u.id !== id);          // remove da lista
   tarefas.forEach(t => { if (t.resp === id) t.resp = ''; }); // atividades dele ficam sem responsável
@@ -73,6 +96,7 @@ function apagarUsuario(id) {                             // exclui o usuário
 }
 $('fu').addEventListener('submit', e => {                // ao enviar o formulário de usuário
   e.preventDefault();                                    // impede recarregar a página
+  if (!ehAdmin()) return;                                // só o administrador pode
   const nome = $('nomeUsuario').value.trim();
   if (!nome) return;
   if (editUser) {                                        // modo edição: altera o nome
@@ -106,15 +130,21 @@ function editarAtiv(id) {                                // carrega a atividade 
   $('titulo').focus();
 }
 function apagar(id) {                                    // exclui a atividade
+  if (!ehAdmin()) return;                                // só o administrador pode
   const t = tarefas.find(x => x.id === id);
   if (!t || !confirm('Excluir a atividade "' + t.titulo + '"?')) return;
   tarefas = tarefas.filter(x => x.id !== id);
   if (editAtiv === id) resetAtiv();
   salvar(); render();
 }
+function registrar(t, acao) {                            // anota no histórico quem fez o quê e quando
+  if (!t.historico) t.historico = [];
+  t.historico.push({ quem: conta, perfil, acao, em: new Date().toISOString() }); // perfil: administrador ou operador
+  if (t.historico.length > 50) t.historico.shift();      // guarda só os 50 últimos registros
+}
 function mover(id, k) {                                  // muda a etapa de uma atividade
   const t = tarefas.find(x => x.id === id);
-  if (t) { t.status = k; salvar(); render(); }
+  if (t) { t.status = k; registrar(t, 'Moveu para "' + STATUS.find(x => x.k === k).nome + '"'); salvar(); render(); }
 }
 $('f').addEventListener('submit', e => {                 // ao enviar o formulário de atividade
   e.preventDefault();
@@ -123,9 +153,11 @@ $('f').addEventListener('submit', e => {                 // ao enviar o formulá
   const dados = { titulo, cat: $('cat').value, resp: $('resp').value, prazo: $('prazo').value };
   if (editAtiv) {                                        // modo edição: atualiza os campos
     const t = tarefas.find(x => x.id === editAtiv);
-    if (t) Object.assign(t, dados);                      // Object.assign copia os campos novos para a atividade
+    if (t) { Object.assign(t, dados); registrar(t, 'Editou a atividade'); }                      // Object.assign copia os campos novos para a atividade
   } else {                                               // modo criação: nova atividade no início da lista
-    tarefas.unshift({ id: novoId(), status: 'todo', criada: hoje(), ...dados }); // criada: data de criação, usada no relatório
+    const nova = { id: novoId(), status: 'todo', criada: hoje(), criadaPor: conta, criadaPerfil: perfil, ...dados }; // criadaPor: quem criou
+    registrar(nova, 'Criou a atividade');
+    tarefas.unshift(nova); // criada: data de criação, usada no relatório
   }
   resetAtiv(); salvar(); render();
   $('titulo').focus();
@@ -155,6 +187,7 @@ function renderUsuarios() {                              // lista de usuários +
 
 function render() {
   renderUsuarios();
+  renderContas();
 
   // --- Filtros ---
   const fb = $('filtros'); fb.replaceChildren();
@@ -171,7 +204,7 @@ function render() {
     tarefas = tarefas.filter(t => t.status !== 'done');
     salvar(); render();
   };
-  fb.appendChild(lim);
+  if (ehAdmin()) fb.appendChild(lim);                    // só o administrador limpa concluídas
 
   // --- Quadro ---
   const board = $('board'); board.replaceChildren();
@@ -202,7 +235,7 @@ function render() {
       if (i < 2) { const b = el('button', null, STATUS[i + 1].nome + ' ▶'); b.onclick = () => mover(t.id, STATUS[i + 1].k); a.appendChild(b); }
       const ed = el('button', null, 'Editar');  ed.onclick = () => editarAtiv(t.id);
       const d = el('button', 'del', 'Excluir'); d.onclick = () => apagar(t.id);
-      a.append(ed, d);
+      a.append(ed); if (ehAdmin()) a.append(d);   // operador não vê o botão Excluir
       c.appendChild(a);
       col.appendChild(c);
     });
@@ -245,6 +278,21 @@ function gerarRelatorio() {
   const qtd = k => lista.filter(t => t.status === k).length;  // quantidade por etapa
   const feitas = qtd('done');
   const fd = d => d ? fmtData(d) : '—';                  // data formatada ou traço
+  const rotulo = (u, p) => {                             // "usuario (Administrador)" — perfil atual da conta
+    const c = lerContas().find(x => x.usuario === u);
+    return u + ' (' + (NOMES[c ? c.perfil : p] || '—') + (c ? '' : ', conta excluída') + ')';
+  };
+  const fdh = iso => new Date(iso).toLocaleString('pt-BR'); // data e hora local
+  const criador = t => t.criadaPor ? rotulo(t.criadaPor, t.criadaPerfil) + ' em ' + fd(t.criada) : '—';
+  const ult = t => {                                     // último manuseio: quem, o quê e quando
+    const u = (t.historico || []).slice(-1)[0];
+    return u ? rotulo(u.quem, u.perfil) + ' — ' + u.acao + ' em ' + fdh(u.em) : '—';
+  };
+  const concluidaPor = t => {                            // quem moveu para "Concluídas"
+    if (t.status !== 'done') return '—';
+    const e = [...(t.historico || [])].reverse().find(x => x.acao.includes('Concluídas'));
+    return e ? rotulo(e.quem, e.perfil) : '—';
+  };
   const sit = t => STATUS.find(x => x.k === t.status).nome + (atrasada(t) ? ' (atrasada)' : ''); // situação da atividade
 
   function tabela(cabecalho, linhas) {                   // monta uma tabela a partir de títulos e linhas
@@ -265,7 +313,8 @@ function gerarRelatorio() {
   r.appendChild(el('p', 'rinfo', base === 'todas' ? 'Período: todas as atividades' :
     'Período: ' + fmtData(de) + ' a ' + fmtData(ate) + ' (' + $('rBase').selectedOptions[0].text.toLowerCase() + ')'));
   if (sitF !== 'todas') r.appendChild(el('p', 'rinfo', 'Situação: ' + $('rSit').selectedOptions[0].text)); // mostra o filtro usado
-  r.appendChild(el('p', 'rinfo', 'Conta: ' + conta + ' • Gerado em ' + fmtData(hoje())));
+  r.appendChild(el('p', 'rinfo', 'Gerado por: ' + conta + ' (' + NOMES[perfil] + ') em ' + fmtData(hoje())));
+  r.appendChild(el('p', 'rinfo', 'Administradores: ' + lerContas().filter(c => c.perfil === 'admin').map(c => c.usuario).join(', ')));
 
   const resumo = el('div', 'resumo');                    // quadro de totais (todos os tipos)
   [['Total', lista.length], ['A fazer', qtd('todo')], ['Em andamento', qtd('doing')],
@@ -281,8 +330,8 @@ function gerarRelatorio() {
     r.appendChild(el('p', null, 'Nenhuma atividade neste período.'));
 
   } else if (tipo === 'atividades') {                    // --- uma linha por atividade, com a situação de cada uma ---
-    r.appendChild(tabela(['Atividade', 'Categoria', 'Responsável', 'Criada', 'Prazo', 'Situação'],
-      lista.map(t => [t.titulo, t.cat, nomeUsuario(t.resp) || '—', fd(t.criada), fd(t.prazo), sit(t)])));
+    r.appendChild(tabela(['Atividade', 'Categoria', 'Responsável', 'Prazo', 'Situação', 'Criada por', 'Concluída por', 'Último manuseio'],
+      lista.map(t => [t.titulo, t.cat, nomeUsuario(t.resp) || '—', fd(t.prazo), sit(t), criador(t), concluidaPor(t), ult(t)])));
 
   } else if (tipo === 'usuarios') {                      // --- resumo e atividades de cada usuário ---
     const grupos = usuarios.map(u => ({ nome: u.nome, itens: lista.filter(t => t.resp === u.id) }));
@@ -296,8 +345,8 @@ function gerarRelatorio() {
       grupos.forEach(g => {                              // detalhe de cada usuário que tem atividades
         if (!g.itens.length) return;
         r.appendChild(el('h3', null, g.nome));
-        r.appendChild(tabela(['Atividade', 'Categoria', 'Prazo', 'Situação'],
-          g.itens.map(t => [t.titulo, t.cat, fd(t.prazo), sit(t)])));
+        r.appendChild(tabela(['Atividade', 'Categoria', 'Prazo', 'Situação', 'Último manuseio'],
+          g.itens.map(t => [t.titulo, t.cat, fd(t.prazo), sit(t), ult(t)])));
       });
     }
 
@@ -306,9 +355,17 @@ function gerarRelatorio() {
       const it = lista.filter(t => t.status === s.k);
       r.appendChild(el('h3', null, s.nome + ' (' + it.length + ')'));
       if (!it.length) r.appendChild(el('p', 'rinfo', 'Nenhuma atividade.'));
-      else r.appendChild(tabela(['Atividade', 'Categoria', 'Responsável', 'Prazo'],
-        it.map(t => [t.titulo, t.cat, nomeUsuario(t.resp) || '—', fd(t.prazo)])));
+      else r.appendChild(tabela(['Atividade', 'Categoria', 'Responsável', 'Prazo', 'Último manuseio'],
+        it.map(t => [t.titulo, t.cat, nomeUsuario(t.resp) || '—', fd(t.prazo), ult(t)])));
     });
+  }
+  if ($('rHist').checked && lista.length) {              // histórico completo, se a caixa estiver marcada
+    r.appendChild(el('h3', null, 'Histórico de manuseio'));
+    const linhas = [];
+    lista.forEach(t => (t.historico || []).forEach(x => linhas.push({ em: x.em, l: [t.titulo, fdh(x.em), rotulo(x.quem, x.perfil), x.acao] })));
+    linhas.sort((a, b) => a.em.localeCompare(b.em));     // ordem cronológica
+    r.appendChild(linhas.length ? tabela(['Atividade', 'Data e hora', 'Quem', 'Ação'], linhas.map(x => x.l))
+      : el('p', 'rinfo', 'Nenhum registro (atividades antigas não têm histórico).'));
   }
   $('relatorio').hidden = false;                         // mostra o relatório
   $('relatorio').scrollIntoView({ behavior: 'smooth' });
@@ -321,6 +378,84 @@ $('rImprimir').onclick = () => {                         // "Gerar e imprimir": 
   if (!$('fr').reportValidity()) return;                 // confere se as datas foram preenchidas
   if (gerarRelatorio()) setTimeout(() => window.print(), 150); // espera a tela atualizar e abre a impressão
 };
+
+/* ===== CONTAS DE ACESSO (só administrador) ===== */
+let editConta = null;                                    // conta em edição (null = criando)
+const NOMES = { admin: 'Administrador', operador: 'Operador' };
+
+function resetConta() {                                  // volta o formulário ao modo "criar"
+  editConta = null;
+  $('fc').reset();
+  $('cUser').disabled = false;
+  $('cPass').required = true;
+  $('cPass').placeholder = 'Senha (mín. 6)';
+  $('btnConta').textContent = 'Criar conta';
+  $('cancelaConta').hidden = true;
+}
+function editarConta(u) {                                // carrega a conta no formulário
+  if (!ehAdmin()) return;
+  const c = lerContas().find(x => x.usuario === u);
+  if (!c) return;
+  editConta = u;
+  $('cUser').value = u; $('cUser').disabled = true;      // o nome de login não muda
+  $('cPass').value = ''; $('cPass').required = false;    // senha em branco = manter a atual
+  $('cPass').placeholder = 'Nova senha (vazio = manter)';
+  $('cPerfil').value = c.perfil;
+  $('btnConta').textContent = 'Salvar conta';
+  $('cancelaConta').hidden = false;
+  $('cPerfil').focus();
+}
+function apagarConta(u) {
+  if (!ehAdmin()) return;
+  const contas = lerContas();
+  const c = contas.find(x => x.usuario === u);
+  if (!c) return;
+  if (u === conta) return alert('Você não pode excluir a sua própria conta.');
+  if (c.perfil === 'admin' && contas.filter(x => x.perfil === 'admin').length < 2) return alert('Precisa existir pelo menos um administrador.');
+  if (!confirm('Excluir a conta "' + u + '"?')) return;
+  try { localStorage.setItem('contas', JSON.stringify(contas.filter(x => x.usuario !== u))); } catch (e) {}
+  if (editConta === u) resetConta();
+  render();
+}
+function renderContas() {                                // lista as contas de acesso
+  if (!ehAdmin()) return;
+  const ul = $('listaContas'); ul.replaceChildren();
+  lerContas().forEach(c => {
+    const li = el('li');
+    li.appendChild(el('span', null, c.usuario + (c.usuario === conta ? ' (você)' : '')));
+    li.appendChild(el('span', 'n', NOMES[c.perfil]));
+    const b1 = el('button', null, 'Editar');   b1.onclick = () => editarConta(c.usuario);
+    li.appendChild(b1);
+    if (c.usuario !== conta) { const b2 = el('button', 'del', 'Excluir'); b2.onclick = () => apagarConta(c.usuario); li.appendChild(b2); }
+    ul.appendChild(li);
+  });
+}
+$('fc').addEventListener('submit', async e => {         // criar ou salvar conta
+  e.preventDefault();
+  if (!ehAdmin()) return;
+  const contas = lerContas(), pf = $('cPerfil').value, senha = $('cPass').value;
+  if (editConta) {                                       // --- EDITAR: perfil e (opcional) senha ---
+    const c = contas.find(x => x.usuario === editConta);
+    if (!c) return;
+    if (c.perfil === 'admin' && pf !== 'admin' && contas.filter(x => x.perfil === 'admin').length < 2) return alert('Precisa existir pelo menos um administrador.');
+    if (senha) {
+      if (senha.length < 6) return alert('A senha precisa ter pelo menos 6 caracteres.');
+      c.salt = novoSalt(); c.hash = await gerarHash(senha, c.salt);
+    }
+    c.perfil = pf;
+    if (c.usuario === conta) { perfil = pf; atualizarTopo(); } // mudou o próprio perfil: atualiza a tela
+  } else {                                               // --- CRIAR ---
+    const usuario = $('cUser').value.trim().toLowerCase();
+    if (usuario.length < 3) return alert('O usuário precisa ter pelo menos 3 caracteres.');
+    if (senha.length < 6) return alert('A senha precisa ter pelo menos 6 caracteres.');
+    if (contas.some(c => c.usuario === usuario)) return alert('Esse usuário já existe.');
+    const salt = novoSalt();
+    contas.push({ usuario, salt, perfil: pf, hash: await gerarHash(senha, salt) });
+  }
+  try { localStorage.setItem('contas', JSON.stringify(contas)); } catch (er) { return alert('Não foi possível salvar.'); }
+  resetConta(); render();
+});
+$('cancelaConta').onclick = resetConta;
 
 /* ===== LOGIN: CONTAS, SENHA E SESSÃO ===== */
 let modoCadastro = false;   // false = tela "Entrar"; true = tela "Criar conta"
@@ -347,7 +482,8 @@ function novoSalt() {                                    // "sal": texto aleató
 
 function setModo(cadastro) {                             // alterna entre Entrar e Criar conta
   modoCadastro = cadastro;
-  $('loginTitulo').textContent = cadastro ? 'Criar conta' : 'Entrar';
+  $('loginTitulo').textContent = cadastro ? 'Criar administrador' : 'Entrar';
+  $('lTroca').hidden = true;                             // novas contas só são criadas pelo administrador
   $('lBtn').textContent = cadastro ? 'Criar conta' : 'Entrar';
   $('lTroca').textContent = cadastro ? 'Já tenho conta' : 'Criar uma conta';
   $('lConfLabel').hidden = !cadastro;                    // mostra "Confirmar senha" só ao criar
@@ -360,21 +496,24 @@ function msg(t) { $('loginMsg').textContent = t; }       // mostra mensagem na t
 function entrar(usuario) {                               // libera o sistema para a conta
   conta = usuario;
   try { sessionStorage.setItem('sessao', usuario); } catch (e) {} // sessão dura até fechar a aba
-  tarefas = ler('atividades:' + conta);                  // carrega os dados desta conta
-  usuarios = ler('usuarios:' + conta);
-  $('quem').textContent = 'Conta: ' + conta;
+  const c = lerContas().find(x => x.usuario === usuario);
+  perfil = c ? c.perfil : 'operador';                    // perfil da conta
+  migrar(usuario);
+  tarefas = ler('atividades:geral');                     // dados compartilhados por todas as contas
+  usuarios = ler('usuarios:geral');
+  atualizarTopo();
   $('login').hidden = true;                              // esconde o login
   $('app').hidden = false; padraoPeriodo();                               // mostra o sistema
   render();
 }
 function sair() {                                        // encerra a sessão
   try { sessionStorage.removeItem('sessao'); } catch (e) {}
-  conta = null; tarefas = []; usuarios = [];             // tira os dados da memória
-  resetAtiv(); resetUsuario();
+  conta = null; perfil = null; tarefas = []; usuarios = []; document.body.classList.remove('op');             // tira os dados da memória
+  resetAtiv(); resetUsuario(); resetConta();
   $('fl').reset();
   $('app').hidden = true; $('relatorio').hidden = true;
   $('login').hidden = false;
-  setModo(ler('contas').length === 0);                   // sem nenhuma conta: já abre em "Criar conta"
+  setModo(lerContas().length === 0);                   // sem nenhuma conta: já abre em "Criar conta"
 }
 
 $('lTroca').onclick = () => setModo(!modoCadastro);
@@ -384,7 +523,7 @@ $('fl').addEventListener('submit', async e => {         // ao enviar o formulár
   e.preventDefault();
   const usuario = $('lUser').value.trim().toLowerCase(); // ignora maiúsculas/minúsculas
   const senha = $('lPass').value;
-  const contas = ler('contas');
+  const contas = lerContas();
   if (Date.now() < bloqueadoAte) { msg('Muitas tentativas. Aguarde alguns segundos.'); return; }
 
   if (modoCadastro) {                                    // --- CRIAR CONTA ---
@@ -393,7 +532,7 @@ $('fl').addEventListener('submit', async e => {         // ao enviar o formulár
     if (senha !== $('lConf').value) return msg('As senhas não são iguais.');
     if (contas.some(c => c.usuario === usuario)) return msg('Esse usuário já existe.');
     const salt = novoSalt();
-    contas.push({ usuario, salt, hash: await gerarHash(senha, salt) }); // guarda só o hash, nunca a senha
+    contas.push({ usuario, salt, perfil: 'admin', hash: await gerarHash(senha, salt) }); // guarda só o hash, nunca a senha
     if (contas.length === 1) {                           // 1ª conta: herda os dados criados antes do login
       ['atividades', 'usuarios'].forEach(k => {
         try { const v = localStorage.getItem(k); if (v) localStorage.setItem(k + ':' + usuario, v); } catch (er) {}
@@ -419,6 +558,6 @@ $('fl').addEventListener('submit', async e => {         // ao enviar o formulár
 (function iniciar() {                                    // roda uma vez ao abrir a página
   let s = null;
   try { s = sessionStorage.getItem('sessao'); } catch (e) {}
-  if (s && ler('contas').some(c => c.usuario === s)) entrar(s); // sessão ainda válida: entra direto
-  else setModo(ler('contas').length === 0);              // senão mostra o login
+  if (s && lerContas().some(c => c.usuario === s)) entrar(s); // sessão ainda válida: entra direto
+  else setModo(lerContas().length === 0);              // senão mostra o login
 })();

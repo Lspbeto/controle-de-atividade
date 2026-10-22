@@ -40,7 +40,7 @@
       </div>
     </header>
 
-    <section class="users"> <!-- Área de usuários: criar, editar e excluir -->
+    <section class="users adm"> <!-- Área de usuários (classe adm: só o administrador vê) -->
       <h2>Usuários (responsáveis pelas atividades)</h2>
       <form id="fu" class="form"> <!-- Formulário de usuário -->
         <input id="nomeUsuario" placeholder="Nome do usuário" aria-label="Nome do usuário" required maxlength="60">
@@ -48,6 +48,21 @@
         <button type="button" class="link" id="cancelaUsuario" hidden>Cancelar</button> <!-- hidden: só aparece durante a edição -->
       </form>
       <ul class="ulist" id="listaUsuarios"></ul> <!-- Lista de usuários: o JavaScript preenche -->
+    </section>
+
+    <section class="users adm" id="contas"> <!-- Contas de acesso: só o administrador vê -->
+      <h2>Contas de acesso (login)</h2>
+      <form id="fc" class="form">
+        <input id="cUser" placeholder="Usuário de login" aria-label="Usuário de login" required maxlength="30" autocomplete="off">
+        <input id="cPass" type="password" placeholder="Senha (mín. 6)" aria-label="Senha" autocomplete="new-password" required>
+        <select id="cPerfil" aria-label="Perfil"> <!-- Perfil define as permissões -->
+          <option value="operador">Operador</option>
+          <option value="admin">Administrador</option>
+        </select>
+        <button class="primary" type="submit" id="btnConta">Criar conta</button>
+        <button type="button" class="link" id="cancelaConta" hidden>Cancelar</button>
+      </form>
+      <ul class="ulist" id="listaContas"></ul> <!-- Lista de contas: o JavaScript preenche -->
     </section>
 
     <form id="f" class="form"> <!-- Formulário de atividade (serve para criar e para editar) -->
@@ -94,6 +109,7 @@
         </select>
       </label>
       <div class="rbtns"> <!-- Dois botões: ver na tela ou imprimir direto -->
+        <label class="chk"><input type="checkbox" id="rHist"> Incluir histórico de manuseio</label> <!-- Lista quem fez cada ação -->
         <button class="primary" type="submit">Gerar relatório</button>
         <button class="chip" type="button" id="rImprimir">Gerar e imprimir</button>
       </div>

@@ -28,7 +28,7 @@
 
 body {
   margin: 0;                    /* remove a margem padrão do navegador */
-  background: var(--bg);        /* usa a variável de fundo */
+  background: #1f8f6a(--bg);        /* usa a variável de fundo */
   color: var(--ink);            /* cor do texto */
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif; /* fonte do sistema, com alternativas */
   line-height: 1.45;            /* altura da linha: deixa o texto respirar */
@@ -256,3 +256,12 @@ input:focus-visible, select:focus-visible, button:focus-visible {
 #fr { grid-template-columns: repeat(5, 1fr); }        /* 5 campos: tipo, de, até, datas por, situação */
 .rbtns { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; } /* botões numa linha própria */
 @media (max-width: 820px) { #fr { grid-template-columns: 1fr 1fr; } }    /* celular: 2 colunas */
+
+/* ===== PERFIS (novo) ===== */
+body.op .adm { display: none !important; }            /* operador não vê o que tem a classe "adm" */
+#fc { grid-template-columns: 2fr 2fr 1fr auto auto; } /* formulário de contas */
+@media (max-width: 820px) { #fc { grid-template-columns: 1fr 1fr; } }
+
+/* ===== RELATÓRIO: QUEM MANUSEOU (novo) ===== */
+#fr .chk { display: flex; align-items: center; gap: 6px; color: var(--ink); } /* caixa de seleção do histórico */
+@media print { #relatorio table { font-size: .75rem; } #relatorio th, #relatorio td { padding: 4px 5px; } } /* tabela mais compacta no papel */
