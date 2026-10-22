@@ -1,132 +1,53 @@
-<!DOCTYPE html> <!-- Informa ao navegador que o documento é HTML5 -->
-<html lang="pt-BR"> <!-- Raiz da página; lang define o idioma (ajuda leitores de tela e tradutores) -->
-<head> <!-- Informações da página que não aparecem na tela -->
-  <meta charset="UTF-8"> <!-- Codificação de caracteres: permite acentos e símbolos -->
-  <meta name="viewport" content="width=device-width, initial-scale=1"> <!-- Faz a página se ajustar à largura do celular -->
-  <title>Controle de atividades</title> <!-- Título mostrado na aba do navegador -->
-  <link rel="stylesheet" href="style.css"> <!-- Liga o arquivo de estilos (CSS) -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Usuários</title>
+    <link rel="stylesheet" href="style.css">
 </head>
-<body> <!-- Tudo o que aparece na tela -->
-  <section class="login" id="login"> <!-- Tela de acesso: aparece antes do sistema -->
-    <form id="fl" class="loginbox"> <!-- Formulário de entrar / criar conta -->
-      <h1 id="loginTitulo">Entrar</h1>
-      <p class="sub" id="loginMsg" role="alert"></p> <!-- Mensagens de erro; role="alert" avisa leitores de tela -->
-      <label>Usuário <input id="lUser" autocomplete="username" required maxlength="30"></label>
-      <label>Senha <input id="lPass" type="password" autocomplete="current-password" required></label> <!-- type="password" esconde os caracteres -->
-      <label id="lConfLabel" hidden>Confirmar senha <input id="lConf" type="password" autocomplete="new-password"></label> <!-- Só aparece ao criar conta -->
-      <button class="primary" type="submit" id="lBtn">Entrar</button>
-      <button class="link" type="button" id="lTroca">Criar uma conta</button> <!-- Alterna entre entrar e criar conta -->
-    </form>
-  </section>
+<body>
+    <div class="container">
+        <!-- Status Card -->
+        <div id="status-card" class="card">
+            <h2 id="status-title">Carregando...</h2>
+            <p id="status-message">Verificando usuários cadastrados no sistema.</p>
+        </div>
 
-  <div class="wrap" id="app" hidden> <!-- Sistema: fica escondido até o login (hidden) -->
-    <div class="topo"> <!-- Barra com o nome da conta e o botão Sair -->
-      <span id="quem"></span>
-      <button class="link" type="button" id="sair">Sair</button>
+        <!-- Registration Form Card -->
+        <div id="register-card" class="card hidden">
+            <h2 id="form-title">Cadastrar Usuário</h2>
+            <form id="user-form">
+                <div class="form-group">
+                    <label for="username">Nome de Usuário</label>
+                    <input type="text" id="username" required placeholder="Digite o nome do usuário">
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">E-mail</label>
+                    <input type="email" id="email" required placeholder="exemplo@email.com">
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Senha</label>
+                    <input type="password" id="password" required placeholder="Digite a senha">
+                </div>
+
+                <button type="submit" id="submit-btn" class="btn primary">Cadastrar</button>
+            </form>
+        </div>
+
+        <!-- Registered Users List Card -->
+        <div id="users-card" class="card hidden">
+            <div class="card-header">
+                <h2>Usuários Cadastrados</h2>
+                <button id="add-more-btn" class="btn secondary">+ Novo Usuário</button>
+            </div>
+            <ul id="user-list"></ul>
+            <button id="clear-btn" class="btn danger">Limpar Todos os Usuários</button>
+        </div>
     </div>
 
-    <header> <!-- Cabeçalho: título e barra de progresso -->
-      <div>
-        <h1>Controle de atividades</h1> <!-- Título principal da página -->
-        <p class="sub">Registre o que precisa fazer e acompanhe cada etapa.</p> <!-- Texto de apoio -->
-      </div>
-      <div class="progress" aria-live="polite"> <!-- aria-live: leitores de tela avisam quando o conteúdo muda -->
-        <b id="pct">0%</b> <!-- Porcentagem concluída (o JavaScript atualiza pelo id) -->
-        <span class="sub" id="resumo">concluído</span> <!-- Ex.: "2 de 5 concluídas" -->
-        <div class="bar"> <!-- Trilho da barra -->
-          <i class="d" id="bd"></i> <!-- Trecho verde: concluídas -->
-          <i class="g" id="bg"></i> <!-- Trecho amarelo: em andamento -->
-        </div>
-      </div>
-    </header>
-
-    <section class="users adm"> <!-- Área de usuários (classe adm: só o administrador vê) -->
-      <h2>Usuários (responsáveis pelas atividades)</h2>
-      <form id="fu" class="form"> <!-- Formulário de usuário -->
-        <input id="nomeUsuario" placeholder="Nome do usuário" aria-label="Nome do usuário" required maxlength="60">
-        <button class="primary" type="submit" id="btnUsuario">Adicionar usuário</button> <!-- O texto muda para "Salvar usuário" ao editar -->
-        <button type="button" class="link" id="cancelaUsuario" hidden>Cancelar</button> <!-- hidden: só aparece durante a edição -->
-      </form>
-      <ul class="ulist" id="listaUsuarios"></ul> <!-- Lista de usuários: o JavaScript preenche -->
-    </section>
-
-    <section class="users adm" id="contas"> <!-- Contas de acesso: só o administrador vê -->
-      <h2>Contas de acesso (login)</h2>
-      <form id="fc" class="form">
-        <input id="cUser" placeholder="Usuário de login" aria-label="Usuário de login" required maxlength="30" autocomplete="off">
-        <input id="cPass" type="password" placeholder="Senha (mín. 6)" aria-label="Senha" autocomplete="new-password" required>
-        <select id="cPerfil" aria-label="Perfil"> <!-- Perfil define as permissões -->
-          <option value="operador">Operador</option>
-          <option value="admin">Administrador</option>
-        </select>
-        <button class="primary" type="submit" id="btnConta">Criar conta</button>
-        <button type="button" class="link" id="cancelaConta" hidden>Cancelar</button>
-      </form>
-      <ul class="ulist" id="listaContas"></ul> <!-- Lista de contas: o JavaScript preenche -->
-    </section>
-
-    <form id="f" class="form"> <!-- Formulário de atividade (serve para criar e para editar) -->
-      <input id="titulo" placeholder="Nova atividade" aria-label="Nova atividade" required maxlength="120">
-      <!-- placeholder: dica dentro do campo | aria-label: nome para leitores de tela
-           required: não deixa enviar vazio | maxlength: limite de 120 caracteres -->
-      <select id="cat" aria-label="Categoria"> <!-- Lista suspensa de categorias -->
-        <option>Trabalho</option>
-        <option>Estudo</option>
-        <option>Casa</option>
-        <option>Pessoal</option>
-      </select>
-      <select id="resp" aria-label="Responsável"></select> <!-- Responsável: o JavaScript preenche com os usuários -->
-      <input id="prazo" type="date" aria-label="Prazo"> <!-- Campo de data (calendário) -->
-      <button class="primary" type="submit" id="btnAtiv">Adicionar</button> <!-- submit: envia o formulário; vira "Salvar alterações" ao editar -->
-      <button type="button" class="link" id="cancela" hidden>Cancelar edição</button>
-    </form>
-
-    <form id="fr" class="form"> <!-- Formulário do relatório: escolhe o período -->
-      <label>Tipo de relatório
-        <select id="rTipo"> <!-- Define o formato do relatório -->
-          <option value="atividades">Atividades e status</option>
-          <option value="usuarios">Usuários</option>
-          <option value="status">Por status</option>
-        </select>
-      </label>
-      <label>De <input id="rDe" type="date" required></label> <!-- Data inicial -->
-      <label>Até <input id="rAte" type="date" required></label> <!-- Data final -->
-      <label>Datas por
-        <select id="rBase"> <!-- Qual data da atividade usar para filtrar o período -->
-          <option value="any">Prazo ou criação</option> <!-- Entra se qualquer uma das datas estiver no período -->
-          <option value="prazo">Só prazo</option>
-          <option value="criada">Só data de criação</option>
-          <option value="todas">Todas (ignora o período)</option> <!-- Lista tudo, mesmo atividades sem data -->
-        </select>
-      </label>
-      <label>Situação
-        <select id="rSit"> <!-- Filtra as atividades pela situação -->
-          <option value="todas">Todas</option>
-          <option value="todo">A fazer</option>
-          <option value="doing">Em andamento</option>
-          <option value="done">Concluídas</option>
-          <option value="atrasada">Atrasadas</option>
-        </select>
-      </label>
-      <div class="rbtns"> <!-- Dois botões: ver na tela ou imprimir direto -->
-        <label class="chk"><input type="checkbox" id="rHist"> Incluir histórico de manuseio</label> <!-- Lista quem fez cada ação -->
-        <button class="primary" type="submit">Gerar relatório</button>
-        <button class="chip" type="button" id="rImprimir">Gerar e imprimir</button>
-      </div>
-    </form>
-
-    <div class="tools" id="filtros"></div> <!-- Botões de filtro: o JavaScript preenche -->
-    <main class="board" id="board"></main>
-
-    <section id="relatorio" hidden> <!-- Relatório: único trecho que aparece na impressão -->
-      <div class="acoes"> <!-- Botões que não saem no papel -->
-        <button class="primary" type="button" id="imprimir">Imprimir</button>
-        <button class="link" type="button" id="fechaRel">Fechar relatório</button>
-      </div>
-      <div id="relCorpo"></div> <!-- Conteúdo do relatório: o JavaScript preenche -->
-    </section> <!-- Quadro com as 3 colunas: o JavaScript preenche -->
-  </div>
-
-  <script src="script.js"></script> <!-- Liga o JavaScript; fica no fim para o HTML já existir quando rodar -->
+    <script src="script.js"></script>
 </body>
 </html>
