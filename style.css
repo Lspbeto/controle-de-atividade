@@ -28,7 +28,7 @@
 
 body {
   margin: 0;                    /* remove a margem padrão do navegador */
-  background: #1f8f6a(--bg);        /* usa a variável de fundo */
+  background: var(--bg);               /* usa a variável de fundo */
   color: var(--ink);            /* cor do texto */
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif; /* fonte do sistema, com alternativas */
   line-height: 1.45;            /* altura da linha: deixa o texto respirar */
@@ -265,3 +265,8 @@ body.op .adm { display: none !important; }            /* operador não vê o que
 /* ===== RELATÓRIO: QUEM MANUSEOU (novo) ===== */
 #fr .chk { display: flex; align-items: center; gap: 6px; color: var(--ink); } /* caixa de seleção do histórico */
 @media print { #relatorio table { font-size: .75rem; } #relatorio th, #relatorio td { padding: 4px 5px; } } /* tabela mais compacta no papel */
+
+/* ===== AJUSTES (novo) ===== */
+.sec { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 10px 14px; cursor: pointer; } /* botão secundário */
+.hint { color: var(--muted); font-size: .85rem; margin: 0; }
+#fr .chk input { width: auto; }

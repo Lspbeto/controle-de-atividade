@@ -1,53 +1,90 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Usuários</title>
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Controle de Atividades</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <!-- Status Card -->
-        <div id="status-card" class="card">
-            <h2 id="status-title">Carregando...</h2>
-            <p id="status-message">Verificando usuários cadastrados no sistema.</p>
-        </div>
+<!-- TELA DE LOGIN: aparece até a pessoa entrar (hidden = escondido) -->
+<div class="login" id="login" hidden>
+  <form class="loginbox" id="fl">
+    <h1>Controle de Atividades</h1>
+    <label>Usuário<input id="lu" required autocomplete="username"></label>
+    <label>Senha<input id="lp" type="password" required autocomplete="current-password"></label>
+    <p id="loginMsg" role="alert"></p>
+    <p class="hint" id="dica" hidden>Primeiro acesso: admin / admin123 (troque a senha depois).</p>
+    <button class="primary">Entrar</button>
+  </form>
+</div>
 
-        <!-- Registration Form Card -->
-        <div id="register-card" class="card hidden">
-            <h2 id="form-title">Cadastrar Usuário</h2>
-            <form id="user-form">
-                <div class="form-group">
-                    <label for="username">Nome de Usuário</label>
-                    <input type="text" id="username" required placeholder="Digite o nome do usuário">
-                </div>
-                
-                <div class="form-group">
-                    <label for="email">E-mail</label>
-                    <input type="email" id="email" required placeholder="exemplo@email.com">
-                </div>
+<!-- SISTEMA: só aparece depois do login. Tudo que tiver class="adm" some para o operador -->
+<main class="wrap" id="app" hidden>
+  <div class="topo">Conta: <b id="quem"></b> <button class="link" id="sair">Sair</button></div>
 
-                <div class="form-group">
-                    <label for="password">Senha</label>
-                    <input type="password" id="password" required placeholder="Digite a senha">
-                </div>
+  <!-- CABEÇALHO: título e barra de progresso -->
+  <header>
+    <div><h1>Controle de Atividades</h1><p class="sub">Quadro com responsável e histórico de movimentações</p></div>
+    <div class="progress"><b id="pct">0%</b> concluído<div class="bar"><i class="d" id="bd"></i><i class="g" id="bg"></i></div></div>
+  </header>
 
-                <button type="submit" id="submit-btn" class="btn primary">Cadastrar</button>
-            </form>
-        </div>
+  <!-- RESPONSÁVEIS (admin): pessoas que executam as atividades -->
+  <section class="users adm">
+    <h2>Responsáveis (quem executa as atividades)</h2>
+    <form class="form" id="fu"><input id="un" required placeholder="Nome do responsável"><button class="primary">Adicionar</button><button type="reset" class="sec">Cancelar</button></form>
+    <ul class="ulist" id="ul"></ul>
+  </section>
 
-        <!-- Registered Users List Card -->
-        <div id="users-card" class="card hidden">
-            <div class="card-header">
-                <h2>Usuários Cadastrados</h2>
-                <button id="add-more-btn" class="btn secondary">+ Novo Usuário</button>
-            </div>
-            <ul id="user-list"></ul>
-            <button id="clear-btn" class="btn danger">Limpar Todos os Usuários</button>
-        </div>
-    </div>
+  <!-- CONTAS (admin): logins com perfil Administrador ou Operador -->
+  <section class="users adm">
+    <h2>Contas de acesso</h2>
+    <form class="form" id="fc">
+      <input id="cu" required placeholder="Usuário">
+      <input id="cp" type="password" required minlength="4" placeholder="Senha (mín. 4)" autocomplete="new-password">
+      <select id="cperf"><option value="operador">Operador</option><option value="admin">Administrador</option></select>
+      <button class="primary">Salvar</button><button type="reset" class="sec">Cancelar</button>
+    </form>
+    <ul class="ulist" id="cl"></ul>
+  </section>
 
-    <script src="script.js"></script>
+  <!-- NOVA ATIVIDADE: título, tipo, prazo e responsável -->
+  <form class="form" id="f">
+    <input id="ft" required placeholder="Nova atividade">
+    <select id="fcat"></select>
+    <input id="fp" type="date" title="Prazo">
+    <select id="fresp"></select>
+    <button class="primary">Adicionar</button>
+  </form>
+
+  <!-- FILTROS (botões criados pelo JavaScript) e limpeza de concluídas -->
+  <div class="tools"><span id="chips" style="display:contents"></span><span class="spacer"></span><button class="link adm" id="limpa">Limpar concluídas</button></div>
+  <!-- QUADRO: as 3 colunas são criadas pelo JavaScript -->
+  <div class="board" id="board"></div>
+
+  <!-- FILTROS DO RELATÓRIO -->
+  <section class="users">
+    <h2>Relatório de atividades</h2>
+    <form class="form" id="fr">
+      <label>Tipo<select id="rt"></select></label>
+      <label>De<input id="rd" type="date"></label>
+      <label>Até<input id="ra" type="date"></label>
+      <label>Datas por<select id="rb"><option value="mov">Movimentação</option><option value="criada">Criação</option><option value="prazo">Prazo</option><option value="fim">Conclusão</option></select></label>
+      <label>Situação<select id="rs"><option value="">Todas</option><option value="todo">A fazer</option><option value="doing">Em andamento</option><option value="done">Concluídas</option><option value="atrasadas">Atrasadas</option></select></label>
+      <label class="chk"><input type="checkbox" id="rh"> Incluir histórico completo (quem movimentou)</label>
+      <div class="rbtns"><button class="primary">Gerar relatório</button><button type="button" class="sec" id="rp">Imprimir direto</button>
+        <!-- IMPRESSÃO RÁPIDA POR PERÍODO: preenche De/Até, gera e imprime (data-p diz qual período) -->
+        <button type="button" class="sec" data-p="hoje">Imprimir hoje</button>
+        <button type="button" class="sec" data-p="semana">Imprimir esta semana</button>
+        <button type="button" class="sec" data-p="mes">Imprimir este mês</button>
+        <button type="button" class="sec" data-p="mesant">Imprimir mês anterior</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- RELATÓRIO: preenchido pelo JavaScript; é a única parte impressa -->
+  <section id="relatorio" hidden></section>
+</main>
+<script src="script.js"></script>
 </body>
 </html>
